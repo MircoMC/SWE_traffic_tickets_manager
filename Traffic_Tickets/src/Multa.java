@@ -53,4 +53,8 @@ public class Multa implements StatoMulta {
     public String getStato() {
         return "";
     }
+
+    protected void setStato(StatoMulta stato) {
+        this.Stato = stato;
+    }
 }
