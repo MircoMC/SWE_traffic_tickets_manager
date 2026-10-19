@@ -1,18 +1,15 @@
-import java.io.Serializable;
+public class Annullata implements StatoMulta {
 
-public class Annullata implements StatoMulta{
+    private static final Annullata INSTANCE = new Annullata();
 
-    private static final Annullata AnnullataUnique = new Annullata();
     private Annullata() {}
-    //@Override
-    public static Annullata GetRefAnnullata() {
-        return AnnullataUnique;
+
+    public static Annullata getInstance() {
+        return INSTANCE;
     }
 
     @Override
-    public String getStato(){
-        return "Annullata";
+    public String getState() { // <-- deve chiamarsi getState()
+        return "ANNULLATA";
     }
-
-
 }

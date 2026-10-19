@@ -1,22 +1,25 @@
-public class Scaduta implements StatoMulta{
+public class Scaduta implements StatoMulta {
+
+    private static final Scaduta INSTANCE = new Scaduta();
+
+    private Scaduta() {}
+
+    public static Scaduta getInstance() {
+        return INSTANCE;
+    }
+
     @Override
-    public String getStato() {
+    public String getState() { // <-- deve chiamarsi getState()
         return "SCADUTA";
     }
 
-    private static final Scaduta ScadutaUnique = new Scaduta();
-    private Scaduta() {}
-    //@Override
-    public static Scaduta GetRefAnnullata() {
-        return ScadutaUnique;
+    @Override
+    public void pay(Multa multa) {
+        multa.changeState(Pagata.getInstance());
     }
 
-    public void Paga(Multa multa) {
-        multa.setStato(Pagata.GetRefAnnullata());
-    }
-
-    //@Override
-    public void Annulla(Multa multa) {
-        multa.setStato(Annullata.GetRefAnnullata());
+    @Override
+    public void cancel(Multa multa) {
+        multa.changeState(Annullata.getInstance());
     }
 }

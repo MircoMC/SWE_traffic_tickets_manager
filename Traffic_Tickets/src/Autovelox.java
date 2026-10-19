@@ -9,7 +9,7 @@ public class Autovelox {
         this.limite = limite;
     }
 
-    void setLimite(double limite) {
+    private void setLimite(double limite) {
         this.limite = limite;
     }
 

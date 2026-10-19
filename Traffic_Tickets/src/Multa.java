@@ -1,60 +1,54 @@
 import java.time.LocalDate;
-import java.util.ArrayList;
 
-public class Multa implements StatoMulta {
+public class Multa extends Observable {
 
-    private final String Id;
-    private final double Importo;
-    private final LocalDate Scadenza;
-    private final double VelocitaRilevata;
-    private StatoMulta Stato;
-    private final ArrayList<MultaObserver> osservatori = new ArrayList<>();
+    private final int id;
+    private final double amount;
+    private final LocalDate dueDate;
+    private final double detectedSpeed;
+    private StatoMulta state;
 
-
-    Multa(String id, double importo, LocalDate date, double speed, StatoMulta stato) {
-        this.Id = id;
-        this.Importo = importo;
-        this.Scadenza = date;
-        this.VelocitaRilevata = speed;
-        this.Stato = stato;
+    public Multa(int id, double amount, LocalDate dueDate, double detectedSpeed, StatoMulta state) {
+        this.id = id;
+        this.amount = amount;
+        this.dueDate = dueDate;
+        this.detectedSpeed = detectedSpeed;
+        this.state = state;
     }
 
-    public void controllaScadenza(LocalDate oggi) {
-        if (oggi.isAfter(Scadenza)) {
-           // scade();
+    public int getId() {
+        return id;
+    }
+
+    public StatoMulta getState() {
+        return state;
+    }
+
+    public void changeState(StatoMulta newState) {
+        StatoMulta previousState = this.state;
+        this.state = newState;
+
+        // Notifica agli Observer del cambio di stato
+        setChanged();
+        notifyObservers(previousState);
+    }
+
+    public void checkExpiration(LocalDate currentDate) {
+        if (currentDate.isAfter(dueDate)) {
+            expire();
         }
     }
 
-    public void aggiungiOsservatore(MultaObserver o) { osservatori.add(o); }
-
-    void cambiaStato(StatoMulta nuovo, Evento evento) {
-        this.Stato = nuovo;
-        for (MultaObserver o : osservatori) {
-            o.AggiornaMulta(this, evento);
-        }
+    // Deleghe delle transizioni allo stato attuale
+    public void pay() {
+        state.pay(this);
     }
 
-
-    public void Paga(Multa multa) {
-
+    public void cancel() {
+        state.cancel(this);
     }
 
-
-    public void Scade(Multa multa) {
-
-    }
-
-
-    public void Annulla(Multa multa) {
-
-    }
-
-    @Override
-    public String getStato() {
-        return "";
-    }
-
-    protected void setStato(StatoMulta stato) {
-        this.Stato = stato;
+    public void expire() {
+        state.expire(this);
     }
 }

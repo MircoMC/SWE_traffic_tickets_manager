@@ -1,26 +1,30 @@
-public class Emessa implements StatoMulta{
+public class Emessa implements StatoMulta {
 
-    private static final Emessa EmessaUnique = new Emessa();
+    private static final Emessa INSTANCE = new Emessa();
+
     private Emessa() {}
-    //@Override
-    public static Emessa GetRefEmessa() {
-        return EmessaUnique;
+
+    public static Emessa getInstance() {
+        return INSTANCE;
     }
 
     @Override
-    public String getStato(){
-        return "Emessa";}
-
-    //@Override
-    public void Paga(Multa multa) {
-        multa.setStato(Pagata.GetRefAnnullata());
+    public String getState() { // <-- deve chiamarsi getState()
+        return "EMESSA";
     }
 
-    //@Override
-    public void Annulla(Multa multa) {
-        multa.setStato(Annullata.GetRefAnnullata());
+    @Override
+    public void pay(Multa multa) {
+        multa.changeState(Pagata.getInstance());
     }
-    public void Scade(Multa multa) {
-        multa.setStato(Scaduta.GetRefAnnullata());
+
+    @Override
+    public void cancel(Multa multa) {
+        multa.changeState(Annullata.getInstance());
+    }
+
+    @Override
+    public void expire(Multa multa) {
+        multa.changeState(Scaduta.getInstance());
     }
 }
