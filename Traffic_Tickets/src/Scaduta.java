@@ -1,4 +1,4 @@
-public class Scaduta implements StatoMulta {
+public final class Scaduta implements StatoMulta {
 
     private static final Scaduta INSTANCE = new Scaduta();
 
@@ -9,17 +9,22 @@ public class Scaduta implements StatoMulta {
     }
 
     @Override
-    public String getState() { // <-- deve chiamarsi getState()
+    public String getState() {
         return "SCADUTA";
     }
 
     @Override
-    public void pay(Multa multa) {
-        multa.changeState(Pagata.getInstance());
+    public boolean isPayable() {
+        return true;
     }
 
     @Override
-    public void cancel(Multa multa) {
-        multa.changeState(Annullata.getInstance());
+    public void pay(StateManager manager, Multa multa) {
+        manager.changeState(multa, Pagata.getInstance(), Evento.PAGATA);
+    }
+
+    @Override
+    public void cancel(StateManager manager, Multa multa) {
+        manager.changeState(multa, Annullata.getInstance(), Evento.ANNULLATA);
     }
 }

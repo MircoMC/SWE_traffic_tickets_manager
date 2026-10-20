@@ -1,54 +1,53 @@
 import java.time.LocalDate;
 
+/**
+ * Dato della multa e soggetto del pattern Observer.
+ * Non gestisce più le transizioni di stato: le fa lo StateManager.
+ */
 public class Multa extends Observable {
 
     private final int id;
-    private final double amount;
+    private final long amountCents;
+    private final String plate;
     private final LocalDate dueDate;
-    private final double detectedSpeed;
-    private StatoMulta state;
+    private final int detectedSpeed;
+    private volatile StatoMulta state;   // volatile: letto anche fuori dai metodi synchronized dello StateManager
 
-    public Multa(int id, double amount, LocalDate dueDate, double detectedSpeed, StatoMulta state) {
+    public Multa(int id, long amountCents, String plate, LocalDate dueDate,
+                 int detectedSpeed, StatoMulta state) {
         this.id = id;
-        this.amount = amount;
+        this.amountCents = amountCents;
+        this.plate = plate;
         this.dueDate = dueDate;
         this.detectedSpeed = detectedSpeed;
         this.state = state;
     }
 
-    public int getId() {
-        return id;
+    public int getId()              { return id; }
+    public long getAmountCents()    { return amountCents; }
+    public String getPlate()        { return plate; }
+    public LocalDate getDueDate()   { return dueDate; }
+    public int getDetectedSpeed()   { return detectedSpeed; }
+    public StatoMulta getState()    { return state; }
+
+    /** Copia indipendente (senza osservatori), usata dal DAO per non condividere l'oggetto. */
+    public Multa copia() {
+        return new Multa(id, amountCents, plate, dueDate, detectedSpeed, state);
     }
 
-    public StatoMulta getState() {
-        return state;
-    }
-
-    public void changeState(StatoMulta newState) {
-        StatoMulta previousState = this.state;
+    /**
+     * Cambia stato e avvisa gli osservatori. Visibile solo al package: lo chiama
+     * lo StateManager, così nessuno può forzare uno stato saltando le regole di transizione.
+     */
+    void changeState(StatoMulta newState, Evento evento) {
         this.state = newState;
-
-        // Notifica agli Observer del cambio di stato
         setChanged();
-        notifyObservers(previousState);
+        notifyObservers(evento);
     }
 
-    public void checkExpiration(LocalDate currentDate) {
-        if (currentDate.isAfter(dueDate)) {
-            expire();
-        }
-    }
-
-    // Deleghe delle transizioni allo stato attuale
-    public void pay() {
-        state.pay(this);
-    }
-
-    public void cancel() {
-        state.cancel(this);
-    }
-
-    public void expire() {
-        state.expire(this);
+    /** Annuncia la nascita della multa agli osservatori già collegati. */
+    void announceEmission() {
+        setChanged();
+        notifyObservers(Evento.EMESSA);
     }
 }

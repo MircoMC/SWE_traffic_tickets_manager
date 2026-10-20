@@ -1,4 +1,5 @@
-public class Annullata implements StatoMulta {
+/** Stato finale: pay e cancel sono rifiutate, expire non ha effetto. */
+public final class Annullata implements StatoMulta {
 
     private static final Annullata INSTANCE = new Annullata();
 
@@ -9,7 +10,7 @@ public class Annullata implements StatoMulta {
     }
 
     @Override
-    public String getState() { // <-- deve chiamarsi getState()
+    public String getState() {
         return "ANNULLATA";
     }
 }

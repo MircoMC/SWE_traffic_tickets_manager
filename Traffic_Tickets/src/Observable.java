@@ -1,19 +1,16 @@
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Vector;
 
 public class Observable {
 
     private boolean changed = false;
-    private Vector<Observer> obs;
-
-    public Observable() {
-        obs = new Vector<>();
-    }
+    private final Vector<Observer> obs = new Vector<>();
 
     public synchronized void addObserver(Observer o) {
         if (o == null) {
             throw new NullPointerException();
         }
-
         if (!obs.contains(o)) {
             obs.addElement(o);
         }
@@ -34,14 +31,12 @@ public class Observable {
             if (!changed) {
                 return;
             }
-
             arrLocal = obs.toArray();
             clearChanged();
         }
 
-        // Corretto il decremento arrLocal.length - 1 ed eseguito il cast a (Observer)
         for (int i = arrLocal.length - 1; i >= 0; i--) {
-            ((Observer) arrLocal[i]).AggiornaMulta(this, arg);
+            ((Observer) arrLocal[i]).update(this, arg);
         }
     }
 
@@ -63,5 +58,10 @@ public class Observable {
 
     public synchronized int countObservers() {
         return obs.size();
+    }
+
+    /** Copia degli osservatori registrati (serve a chi li deve girare ad altri oggetti). */
+    protected synchronized List<Observer> getObservers() {
+        return new ArrayList<>(obs);
     }
 }

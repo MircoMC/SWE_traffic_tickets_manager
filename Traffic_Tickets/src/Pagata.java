@@ -1,4 +1,5 @@
-public class Pagata implements StatoMulta {
+/** Stato finale: pay e cancel sono rifiutate, expire non ha effetto. */
+public final class Pagata implements StatoMulta {
 
     private static final Pagata INSTANCE = new Pagata();
 
@@ -9,7 +10,7 @@ public class Pagata implements StatoMulta {
     }
 
     @Override
-    public String getState() { // <-- deve chiamarsi getState()
+    public String getState() {
         return "PAGATA";
     }
 }

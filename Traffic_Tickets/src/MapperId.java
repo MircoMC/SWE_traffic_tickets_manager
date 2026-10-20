@@ -1,18 +1,19 @@
 import java.util.HashMap;
 import java.util.Map;
 
+/** Identity Map: una sola istanza di Multa per id. */
 public class MapperId {
-   private Map<Integer,Multa> Mapper = new HashMap<Integer,Multa>();
 
-   public MapperId() {}
+    private final Map<Integer, Multa> multe = new HashMap<>();
 
-    public void Register(Multa m) {
-       Mapper.put(m.getId(),m);
+    public void register(Multa m) {
+        Multa esistente = multe.putIfAbsent(m.getId(), m);
+        if (esistente != null && esistente != m) {
+            throw new IllegalStateException("Esiste già una multa con id " + m.getId());
+        }
     }
 
     public Multa get(int id) {
-       return Mapper.get(id);
+        return multe.get(id);
     }
-
-
 }
