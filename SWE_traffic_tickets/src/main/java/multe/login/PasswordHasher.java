@@ -1,4 +1,4 @@
-package multe.login;
+package fines.login;
 
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -14,24 +14,24 @@ import javax.crypto.spec.PBEKeySpec;
  */
 public final class PasswordHasher {
 
-    private static final String ALGORITMO = "PBKDF2WithHmacSHA256";
-    private static final int ITERAZIONI = 600_000;
-    private static final int LUNGHEZZA_HASH_BIT = 256;
-    private static final int LUNGHEZZA_SALT_BYTE = 16;
+    private static final String ALGORITHM = "PBKDF2WithHmacSHA256";
+    private static final int ITERATIONS = 600_000;
+    private static final int HASH_LENGTH_BITS = 256;
+    private static final int SALT_LENGTH_BYTES = 16;
     private static final SecureRandom RANDOM = new SecureRandom();
 
     private PasswordHasher() {}
 
-    public static byte[] nuovoSalt() {
-        byte[] salt = new byte[LUNGHEZZA_SALT_BYTE];
+    public static byte[] newSalt() {
+        byte[] salt = new byte[SALT_LENGTH_BYTES];
         RANDOM.nextBytes(salt);
         return salt;
     }
 
     public static byte[] hash(char[] password, byte[] salt) {
-        PBEKeySpec spec = new PBEKeySpec(password, salt, ITERAZIONI, LUNGHEZZA_HASH_BIT);
+        PBEKeySpec spec = new PBEKeySpec(password, salt, ITERATIONS, HASH_LENGTH_BITS);
         try {
-            return SecretKeyFactory.getInstance(ALGORITMO).generateSecret(spec).getEncoded();
+            return SecretKeyFactory.getInstance(ALGORITHM).generateSecret(spec).getEncoded();
         } catch (NoSuchAlgorithmException | InvalidKeySpecException e) {
             throw new IllegalStateException("Hashing delle password non disponibile", e);
         } finally {
@@ -40,7 +40,7 @@ public final class PasswordHasher {
     }
 
     /** Confronto a tempo costante: il tempo non rivela quanti byte coincidono. */
-    public static boolean verifica(char[] password, byte[] salt, byte[] hashAtteso) {
-        return MessageDigest.isEqual(hash(password, salt), hashAtteso);
+    public static boolean verify(char[] password, byte[] salt, byte[] expectedHash) {
+        return MessageDigest.isEqual(hash(password, salt), expectedHash);
     }
 }
