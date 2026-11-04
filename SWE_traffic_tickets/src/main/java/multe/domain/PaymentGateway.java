@@ -1,5 +1,7 @@
 package fines.domain;
 
+import java.util.UUID;
+
 /**
  * Porta verso il gestore dei pagamenti, definita dal dominio e implementata fuori.
  *
@@ -10,5 +12,5 @@ package fines.domain;
 public interface PaymentGateway {
 
     /** @return true se la multa risulta addebitata (ora o in precedenza), false se il pagamento è rifiutato */
-    boolean payment(int fineId, long amountCents);
+    boolean payment(UUID fineId, long amountCents);
 }

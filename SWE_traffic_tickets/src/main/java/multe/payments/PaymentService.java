@@ -1,6 +1,7 @@
 package fines.payments;
 
 import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import fines.domain.PaymentGateway;
 
@@ -13,11 +14,11 @@ import fines.domain.PaymentGateway;
  */
 public final class PaymentService implements PaymentGateway {
 
-    private final Set<Integer> charged = ConcurrentHashMap.newKeySet();
+    private final Set<UUID> charged = ConcurrentHashMap.newKeySet();
 
     /** @return true se la multa risulta addebitata */
     @Override
-    public boolean payment(int fineId, long amountCents) {
+    public boolean payment(UUID fineId, long amountCents) {
         if (amountCents <= 0) {
             throw new IllegalArgumentException("Importo non valido: " + amountCents);
         }

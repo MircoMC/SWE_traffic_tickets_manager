@@ -3,11 +3,7 @@ package fines.persistence;
 import fines.domain.Fine;
 import fines.domain.FineDAO;
 
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
@@ -17,7 +13,7 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public class InMemoryFineDAO implements FineDAO {
 
-    private final Map<Integer, Fine> rows = new ConcurrentHashMap<>();
+    private final Map<UUID, Fine> rows = new ConcurrentHashMap<>();
 
     @Override
     public void save(Fine fine) {
@@ -34,7 +30,7 @@ public class InMemoryFineDAO implements FineDAO {
     }
 
     @Override
-    public Optional<Fine> findById(int id) {
+    public Optional<Fine> findById(UUID id) {
         return Optional.ofNullable(rows.get(id)).map(Fine::copy);
     }
 
@@ -46,7 +42,7 @@ public class InMemoryFineDAO implements FineDAO {
                 result.add(m.copy());
             }
         }
-        result.sort(Comparator.comparingInt(Fine::getId));
+        result.sort(Comparator.comparing(Fine::getId));
         return result;
     }
 }

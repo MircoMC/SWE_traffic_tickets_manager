@@ -1,6 +1,9 @@
 package fines.app;
 
 import java.time.Duration;
+import java.util.Optional;
+import java.util.UUID;
+
 import fines.speedcamera.SpeedCamera;
 import fines.speedcamera.Location;
 import fines.domain.Cancellation;
@@ -43,7 +46,7 @@ public class Main {
         System.out.println("75 km/h con limite 70 (dentro il margine di 5): multa? " + speedCamera.detect("AB123CD", 75).isPresent());
 
         // Multa 1: emessa e pagata
-        int id1 = speedCamera.detect("AB123CD", 92).getAsInt();
+        UUID id1 = speedCamera.detect("AB123CD", 92).orElseThrow();
         System.out.println("Importo multa 1: " + euro(services.getCopy(id1).getAmountCents()));
         System.out.println("Stato multa 1: " + services.getState(id1).getState());
         services.pay(id1);
@@ -53,8 +56,8 @@ public class Main {
         } catch (IllegalStateException e) {
             System.out.println("Errore: " + e.getMessage());
         }
-        int id2 = speedCamera.detect("EF456GH", 81).getAsInt();
-        int id3 = speedCamera.detect("AB123CD", 80).getAsInt();
+        UUID id2 = speedCamera.detect("EF456GH", 81).orElseThrow();
+        UUID id3 = speedCamera.detect("AB123CD", 80).orElseThrow();
 
         // Annullamento: solo il giudice, dopo il login
         Session mario = login.openSession("mario", "pwdMario1!".toCharArray());
@@ -79,7 +82,7 @@ public class Main {
         services.pay(id2);
 
         // Il DAO è sempre allineato: lo aggiorna lo StateManager a ogni transizione
-        for (int id : new int[] { id1, id2, id3 }) {
+        for (UUID id : new UUID[] { id1, id2, id3 }) {
             dao.findById(id).ifPresent(m ->
                 System.out.println("DAO, multa " + id + ": " + m.getState().getState()));
         }

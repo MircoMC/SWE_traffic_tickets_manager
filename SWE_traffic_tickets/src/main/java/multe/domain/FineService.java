@@ -2,6 +2,8 @@ package fines.domain;
 
 import java.time.Clock;
 import java.util.Objects;
+import java.util.UUID;
+
 import fines.observers.Observer;
 import fines.plates.PlateRegistry;
 import fines.users.Judge;
@@ -37,10 +39,10 @@ public final class FineService {
      * Riceve una misura dell'autovelox e crea la multa. Lo dà come ToIntFunction all'Autovelox: {@code servizi::createFine}.
      *
      * @return l'id della nuova multa
-     * @throws IllegalArgumentException    se la velocità non supera il limite
+     * @throws IllegalArgumentException   se la velocità non supera il limite
      * @throws UnregisteredPlateException se la targa non aveva un proprietario all'istante della rilevazione
      */
-    public int createFine(Detection detection) {
+    public UUID createFine(Detection detection) {
         return maker.createFine(detection);
     }
 
@@ -50,12 +52,12 @@ public final class FineService {
      * @return true se pagata, false se il gestore dei pagamenti ha rifiutato
      * @throws IllegalStateException se nello stato attuale la multa non è pagabile
      */
-    public boolean pay(int fineId) {
+    public boolean pay(UUID fineId) {
         return stateManager.paymentStarting(fineId);
     }
 
     /** Controlla la scadenza con la data del Clock: il chiamante non può sceglierla. */
-    public void checkExpiration(int fineId) {
+    public void checkExpiration(UUID fineId) {
         stateManager.checkExpiration(fineId);
     }
 
@@ -64,12 +66,12 @@ public final class FineService {
         return new Cancellation(stateManager, Objects.requireNonNull(judge).getId());
     }
 
-    public FineState getState(int fineId) {
+    public FineState getState(UUID fineId) {
         return stateManager.getState(fineId);
     }
 
     /** Copia indipendente: modificarla non ha alcun effetto sulla multa vera. */
-    public Fine getCopy(int fineId) {
+    public Fine getCopy(UUID fineId) {
         Fine copy = identityMap.getCopy(fineId);
         if (copy == null) {
             throw new IllegalArgumentException("Multa inesistente: " + fineId);

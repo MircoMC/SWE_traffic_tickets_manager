@@ -4,6 +4,7 @@ import fines.observers.Observable;
 
 import java.time.LocalDate;
 import java.util.Optional;
+import java.util.UUID;
 
 /**
  * Dato della multa e soggetto del pattern Observer.
@@ -14,7 +15,7 @@ import java.util.Optional;
  */
 public class Fine extends Observable {
 
-    private final int id;
+    private final UUID id;
     private final long amountCents;
     private final int ownerId;    // proprietario della targa ALL'ISTANTE della rilevazione
     private final LocalDate dueDate;
@@ -25,14 +26,14 @@ public class Fine extends Observable {
     /** Monitor privato: lo StateManager serializza le operazioni su una multa con questo, non con la Multa stessa. */
     final Object lock = new Object();
 
-    Fine(int id, long amountCents, int ownerId,
+    Fine(UUID id, long amountCents, int ownerId,
           LocalDate dueDate, Detection detection, FineState state) {
         this(id, amountCents, ownerId, dueDate, detection, state, null);
     }
 
-    private Fine(int id, long amountCents, int ownerId,
+    private Fine(UUID iD, long amountCents, int ownerId,
                   LocalDate dueDate, Detection detection, FineState state, CancellationRuling ruling) {
-        this.id = id;
+        this.id = iD;
         this.amountCents = amountCents;
         this.ownerId = ownerId;
         this.dueDate = dueDate;
@@ -41,7 +42,7 @@ public class Fine extends Observable {
         this.ruling = ruling;
     }
 
-    public int getId()              { return id; }
+    public UUID  getId()              { return id; }
     public long getAmountCents()    { return amountCents; }
     public String getPlate()        { return detection.getPlate(); }
     public int getOwnerId()  { return ownerId; }

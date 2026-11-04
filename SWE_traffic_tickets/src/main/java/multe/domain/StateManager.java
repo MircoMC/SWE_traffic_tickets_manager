@@ -2,6 +2,7 @@ package fines.domain;
 
 import java.time.Clock;
 import java.time.LocalDate;
+import java.util.UUID;
 
 /**
  * Sta tra Multa e FineState: è l'unico che cambia lo stato di una multa.
@@ -30,7 +31,7 @@ class StateManager {
         this.clock = clock;
     }
 
-    FineState getState(int fineId) {
+    FineState getState(UUID fineId) {
         Fine fine = find(fineId);
         synchronized (fine.lock) {
             return fine.getState();
@@ -46,7 +47,7 @@ class StateManager {
      * @return true se pagata, false se il gestore ha rifiutato (stato invariato)
      * @throws IllegalStateException se nello stato attuale la multa non è pagabile
      */
-    boolean paymentStarting(int fineId) {
+    boolean paymentStarting(UUID fineId) {
         Fine fine = find(fineId);
         synchronized (fine.lock) {
             FineState next = fine.getState().onPay();   // rifiuta PRIMA di addebitare
@@ -59,7 +60,7 @@ class StateManager {
     }
 
     /** Annullamento disposto da un giudice. Una multa pagata non è annullabile. */
-    void cancelStarting(int fineId, int judgeId, String reason) {
+    void cancelStarting(UUID fineId, int judgeId, String reason) {
         if (reason == null || reason.trim().isEmpty()) {
             throw new IllegalArgumentException("Motivazione obbligatoria");
         }
@@ -72,7 +73,7 @@ class StateManager {
     }
 
     /** La data viene dal Clock del sistema, non dal chiamante. */
-    void checkExpiration(int fineId) {
+    void checkExpiration(UUID fineId) {
         Fine fine = find(fineId);
         synchronized (fine.lock) {
             if (LocalDate.now(clock).isAfter(fine.getDueDate())) {
@@ -95,7 +96,7 @@ class StateManager {
         fine.changeState(next, event, ruling);
     }
 
-    private Fine find(int fineId) {
+    private Fine find(UUID fineId) {
         Fine fine = identityMap.get(fineId);
         if (fine == null) {
             throw new IllegalArgumentException("Multa inesistente: " + fineId);
