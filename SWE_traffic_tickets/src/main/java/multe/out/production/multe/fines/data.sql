@@ -24,34 +24,30 @@ INSERT INTO plate_ownerships (plate, owner_id, since) VALUES
   ('GH789IJ', 3, '2025-03-01 00:00:00+00'),
   ('KL012MN', 4, '2023-06-01 00:00:00+00'),
   ('XY999ZZ', 1, '2024-01-01 00:00:00+00'),
-  ('XY999ZZ', 3, '2026-09-15 00:00:00+00');   -- sold by user 1 to user 3
+  ('XY999ZZ', 3, '2026-09-15 00:00:00+00');
 
 INSERT INTO fines (id, owner_id, amount_cents, due_date, state, camera_id, plate, detected_speed, speed_limit,
                    detected_at, judge_id, ruling_reason, ruling_date) VALUES
-  (1, 1, 33000, '2026-12-25', 'ISSUED',    'AVX-001', 'AB123CD',  68, 50, '2026-10-26 10:30:00+00', NULL, NULL, NULL),
-  (2, 2, 30000, '2026-10-31', 'PAID',      'AVX-002', 'EF456GH',  85, 70, '2026-09-01 09:15:00+00', NULL, NULL, NULL),
-  (3, 2, 50000, '2026-12-04', 'ISSUED',    'AVX-003', 'EF456GH', 125, 90, '2026-10-05 11:00:00+00', NULL, NULL, NULL),
-  (4, 3, 33000, '2026-12-11', 'PAID',      'AVX-004', 'GH789IJ',  48, 30, '2026-10-12 16:40:00+00', NULL, NULL, NULL),
-  (5, 4, 37000, '2026-07-09', 'EXPIRED',   'AVX-001', 'KL012MN',  72, 50, '2026-05-10 08:30:00+00', NULL, NULL, NULL),
-  (6, 4, 67000, '2026-07-31', 'CANCELLED', 'AVX-003', 'KL012MN', 142, 90, '2026-06-01 10:00:00+00',
+  ('550e8400-e29b-41d4-a716-446655440000', 1, 33000, '2026-12-25', 'ISSUED',    'AVX-001', 'AB123CD',  68, 50, '2026-10-26 10:30:00+00', NULL, NULL, NULL),
+  ('550e8400-e29b-41d4-a716-446655440001', 2, 30000, '2026-10-31', 'PAID',      'AVX-002', 'EF456GH',  85, 70, '2026-09-01 09:15:00+00', NULL, NULL, NULL),
+  ('550e8400-e29b-41d4-a716-446655440002', 2, 50000, '2026-12-04', 'ISSUED',    'AVX-003', 'EF456GH', 125, 90, '2026-10-05 11:00:00+00', NULL, NULL, NULL),
+  ('550e8400-e29b-41d4-a716-446655440003', 3, 33000, '2026-12-11', 'PAID',      'AVX-004', 'GH789IJ',  48, 30, '2026-10-12 16:40:00+00', NULL, NULL, NULL),
+  ('550e8400-e29b-41d4-a716-446655440004', 4, 37000, '2026-07-09', 'EXPIRED',   'AVX-001', 'KL012MN',  72, 50, '2026-05-10 08:30:00+00', NULL, NULL, NULL),
+  ('550e8400-e29b-41d4-a716-446655440005', 4, 67000, '2026-07-31', 'CANCELLED', 'AVX-003', 'KL012MN', 142, 90, '2026-06-01 10:00:00+00',
         7, 'Detection error: camera calibration expired', '2026-07-20');
 
--- the sequence must continue after the ids inserted above
-SELECT setval('fine_id_seq', (SELECT MAX(id) FROM fines));
-
 INSERT INTO fine_events (fine_id, event, occurred_at, author_id) VALUES
-  (1, 'ISSUED',    '2026-10-26 10:30:00+00', NULL),
-  (2, 'ISSUED',    '2026-09-01 09:15:00+00', NULL),
-  (2, 'PAID',      '2026-09-10 14:22:00+00', NULL),
-  (3, 'ISSUED',    '2026-10-05 11:00:00+00', NULL),
-  (4, 'ISSUED',    '2026-10-12 16:40:00+00', NULL),
-  (4, 'PAID',      '2026-10-15 18:05:00+00', NULL),
-  (5, 'ISSUED',    '2026-05-10 08:30:00+00', NULL),
-  (5, 'EXPIRED',   '2026-07-10 00:00:00+00', NULL),
-  (6, 'ISSUED',    '2026-06-01 10:00:00+00', NULL),
-  (6, 'CANCELLED', '2026-07-20 15:30:00+00', 7);
+  ('550e8400-e29b-41d4-a716-446655440000', 'ISSUED',    '2026-10-26 10:30:00+00', NULL),
+  ('550e8400-e29b-41d4-a716-446655440001', 'ISSUED',    '2026-09-01 09:15:00+00', NULL),
+  ('550e8400-e29b-41d4-a716-446655440001', 'PAID',      '2026-09-10 14:22:00+00', NULL),
+  ('550e8400-e29b-41d4-a716-446655440002', 'ISSUED',    '2026-10-05 11:00:00+00', NULL),
+  ('550e8400-e29b-41d4-a716-446655440003', 'ISSUED',    '2026-10-12 16:40:00+00', NULL),
+  ('550e8400-e29b-41d4-a716-446655440003', 'PAID',      '2026-10-15 18:05:00+00', NULL),
+  ('550e8400-e29b-41d4-a716-446655440004', 'ISSUED',    '2026-05-10 08:30:00+00', NULL),
+  ('550e8400-e29b-41d4-a716-446655440004', 'EXPIRED',   '2026-07-10 00:00:00+00', NULL),
+  ('550e8400-e29b-41d4-a716-446655440005', 'ISSUED',    '2026-06-01 10:00:00+00', NULL),
+  ('550e8400-e29b-41d4-a716-446655440005', 'CANCELLED', '2026-07-20 15:30:00+00', 7);
 
--- Check query: every fine with its owner and the speed camera
 SELECT f.id, u.full_name, f.plate, f.amount_cents / 100.0 AS amount_eur, f.state, f.detected_speed, f.speed_limit
 FROM fines f
 JOIN users u ON u.id = f.owner_id

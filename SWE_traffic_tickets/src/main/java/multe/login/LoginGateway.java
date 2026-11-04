@@ -3,30 +3,30 @@ package fines.login;
 import java.util.Optional;
 
 /**
- * Unico punto che parla con PasswordDatabase: verifica la password e restituisce
- * l'identità (id e ruolo) di chi si è autenticato.
+ * The only point that talks to the credentials store: it verifies the password and returns
+ * the identity (id and role) of whoever authenticated.
  */
 public class LoginGateway {
 
-    /** Usato quando l'utente non esiste, per far durare il controllo quanto uno vero. */
+    /** Used when the user does not exist, so that the check takes as long as a real one. */
     private static final byte[] DUMMY_SALT = PasswordHasher.newSalt();
 
-    private final PasswordDatabase passwordDatabase;
+    private final CredentialsStore credentials;
 
-    public LoginGateway(PasswordDatabase passwordDatabase) {
-        this.passwordDatabase = passwordDatabase;
+    public LoginGateway(CredentialsStore credentials) {
+        this.credentials = credentials;
     }
 
-    /** @return l'identità se le credenziali sono corrette, altrimenti vuoto */
+    /** @return the identity if the credentials are correct, otherwise empty */
     public Optional<Identity> authenticate(String username, char[] password) {
-        Optional<PasswordDatabase.Entry> found = passwordDatabase.find(username);
+        Optional<CredentialsStore.Entry> found = credentials.find(username);
 
         if (!found.isPresent()) {
             PasswordHasher.hash(password, DUMMY_SALT);
             return Optional.empty();
         }
 
-        PasswordDatabase.Entry entry = found.get();
+        CredentialsStore.Entry entry = found.get();
         if (!PasswordHasher.verify(password, entry.getSalt(), entry.getHash())) {
             return Optional.empty();
         }
