@@ -3,14 +3,33 @@
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
-  <groupId>multe</groupId>
-  <artifactId>multe-autovelox</artifactId>
-  <version>0.2</version>
+  <groupId>fines</groupId>
+  <artifactId>fines</artifactId>
+  <version>0.3</version>
+
   <properties>
     <maven.compiler.release>17</maven.compiler.release>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
   </properties>
+
   <dependencies>
+    <!-- Driver PostgreSQL (runtime) -->
+    <dependency>
+      <groupId>org.postgresql</groupId>
+      <artifactId>postgresql</artifactId>
+      <version>42.7.3</version>
+      <scope>runtime</scope>
+    </dependency>
+    
+    <!-- H2 Database Engine -->
+    <dependency>
+      <groupId>com.h2database</groupId>
+      <artifactId>h2</artifactId>
+      <version>2.2.224</version>
+      <scope>runtime</scope>
+    </dependency>
+
+    <!-- Testing JUnit 5 -->
     <dependency>
       <groupId>org.junit.jupiter</groupId>
       <artifactId>junit-jupiter</artifactId>
@@ -18,12 +37,23 @@
       <scope>test</scope>
     </dependency>
   </dependencies>
+
   <build>
+    <!-- the tests live in src/test (packages fines.*), not in the standard src/test/java -->
+    <testSourceDirectory>src/test</testSourceDirectory>
     <plugins>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-surefire-plugin</artifactId>
         <version>3.2.5</version>
+      </plugin>
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>exec-maven-plugin</artifactId>
+        <version>3.1.0</version>
+        <configuration>
+          <mainClass>fines.app.DatabaseDemo</mainClass>
+        </configuration>
       </plugin>
     </plugins>
   </build>

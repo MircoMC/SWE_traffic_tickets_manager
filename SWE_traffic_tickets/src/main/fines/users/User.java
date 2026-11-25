@@ -1,9 +1,9 @@
 package fines.users;
 
 /**
- * Chi usa il sistema. I tipi di utente sono SOLO quelli di questo package: il costruttore è package-private,
- * quindi da fuori nessuno può creare una sottoclasse con un getId() "furbo", e getId() è final.
- * L'identità di chi è loggato nasce nel LoginProxy dal ruolo salvato nel database, mai dal chiamante.
+ * Whoever uses the system. The user types are ONLY those in this package: the constructor is package-private,
+ * so nobody from outside can create a subclass with a "clever" getId(), and getId() is final.
+ * The identity of whoever is logged in is created in the LoginProxy from the role stored in the database, never by the caller.
  */
 public abstract class User {
 
@@ -18,6 +18,6 @@ public abstract class User {
     public final int getId()      { return id; }
     public final String getName() { return name; }
 
-    /** Regola di accesso allo storico: ogni tipo di utente decide di quali utenti può vedere le multe. */
+    /** History access rule: each user type decides whose fines it can view. */
     public abstract boolean canViewFinesOf(int otherUserId);
 }

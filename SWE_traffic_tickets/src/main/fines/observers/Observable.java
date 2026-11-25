@@ -62,7 +62,7 @@ public class Observable {
         return obs.size();
     }
 
-    /** Copia degli osservatori registrati (serve a chi li deve girare ad altri oggetti). */
+    /** Copy of the registered observers (for whoever must pass them on to other objects). */
     protected synchronized List<Observer> getObservers() {
         return new ArrayList<>(obs);
     }

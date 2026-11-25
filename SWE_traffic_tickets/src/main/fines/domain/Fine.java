@@ -7,23 +7,23 @@ import java.util.Optional;
 import java.util.UUID;
 
 /**
- * Dato della multa e soggetto del pattern Observer.
- * Non gestisce le transizioni di stato: le fa lo StateManager.
+ * Fine data and subject of the Observer pattern.
+ * It does not handle state transitions: the StateManager does.
  *
- * L'originale non esce mai dal package. Gli osservatori esterni e chi chiama la facciata
- * ricevono solo copie (vedi ProtectedObserver e FineService.getCopia).
+ * The original never leaves the package. External observers and whoever calls the facade
+ * only receive copies (see ProtectedObserver and FineService.getCopy).
  */
 public class Fine extends Observable {
 
-    private final UUID id;              // casuale e non sequenziale: chi non lo conosce non può né contarle né indovinarle
+    private final UUID id;
     private final long amountCents;
-    private final int ownerId;    // proprietario della targa ALL'ISTANTE della rilevazione
+    private final int ownerId;    // owner of the plate AT THE INSTANT of the detection
     private final LocalDate dueDate;
-    private final Detection detection;   // autovelox, targa, velocità, limite e istante della misura
-    private volatile FineState state;   // volatile: letto anche fuori dai synchronized dello StateManager
-    private volatile CancellationRuling ruling;   // presente solo se la multa è stata annullata
+    private final Detection detection;   // speed camera, plate, speed, limit and instant of the measurement
+    private volatile FineState state;   // volatile: also read outside the StateManager's synchronized blocks
+    private volatile CancellationRuling ruling;   // present only if the fine was cancelled
 
-    /** Monitor privato: lo StateManager serializza le operazioni su una multa con questo, non con la Fine stessa. */
+    /** Private monitor: the StateManager serializes the operations on a fine with this, not with the Fine itself. */
     final Object lock = new Object();
 
     Fine(UUID id, long amountCents, int ownerId,
@@ -31,9 +31,9 @@ public class Fine extends Observable {
         this(id, amountCents, ownerId, dueDate, detection, state, null);
     }
 
-    private Fine(UUID id, long amountCents, int ownerId,
+    private Fine(UUID iD, long amountCents, int ownerId,
                   LocalDate dueDate, Detection detection, FineState state, CancellationRuling ruling) {
-        this.id = id;
+        this.id = iD;
         this.amountCents = amountCents;
         this.ownerId = ownerId;
         this.dueDate = dueDate;
@@ -42,7 +42,7 @@ public class Fine extends Observable {
         this.ruling = ruling;
     }
 
-    public UUID getId()             { return id; }
+    public UUID  getId()              { return id; }
     public long getAmountCents()    { return amountCents; }
     public String getPlate()        { return detection.getPlate(); }
     public int getOwnerId()  { return ownerId; }
@@ -51,25 +51,35 @@ public class Fine extends Observable {
     public Detection getDetection() { return detection; }
     public FineState getState()    { return state; }
 
-    /** Chi ha annullato la multa, quando e perché (vuoto se non è annullata). */
+    /** Who cancelled the fine, when and why (empty if it is not cancelled). */
     public Optional<CancellationRuling> getRuling() {
         return Optional.ofNullable(ruling);
     }
 
-    /** Copia indipendente (senza osservatori), usata dal DAO e dagli osservatori per non condividere l'oggetto. */
+    /**
+     * Rebuilds a fine read from persistent storage. Meant for DAO implementations only:
+     * the state is given by its name and the ruling by its fields (null judgeId = not cancelled).
+     */
+    public static Fine restore(UUID id, long amountCents, int ownerId, LocalDate dueDate, Detection detection,
+                               String stateName, Integer judgeId, String reason, LocalDate rulingDate) {
+        CancellationRuling ruling = judgeId == null ? null : new CancellationRuling(judgeId, reason, rulingDate);
+        return new Fine(id, amountCents, ownerId, dueDate, detection, FineState.fromName(stateName), ruling);
+    }
+
+    /** Independent copy (without observers), used by the DAO and the observers so the object is not shared. */
     public Fine copy() {
         return new Fine(id, amountCents, ownerId, dueDate, detection, state, ruling);
     }
 
-    /** Come lo sarebbe la multa dopo la transizione: serve a salvarla nel DAO PRIMA di cambiare quella vera. */
+    /** What the fine would look like after the transition: used to save it in the DAO BEFORE changing the real one. */
     Fine copyWith(FineState newState, CancellationRuling newRuling) {
         return new Fine(id, amountCents, ownerId, dueDate, detection, newState,
             newRuling != null ? newRuling : ruling);
     }
 
     /**
-     * Cambia stato e avvisa gli osservatori. Visibile solo al package: lo chiama
-     * lo StateManager, così nessuno può forzare uno stato saltando le regole di transizione.
+     * Changes state and notifies the observers. Visible only to the package: it is called by
+     * the StateManager, so nobody can force a state by skipping the transition rules.
      */
     void changeState(FineState newState, FineEvent event, CancellationRuling newRuling) {
         if (newRuling != null) {
@@ -80,7 +90,7 @@ public class Fine extends Observable {
         notifyObservers(event);
     }
 
-    /** Annuncia la nascita della multa agli osservatori già collegati. */
+    /** Announces the birth of the fine to the observers already attached. */
     void announceEmission() {
         setChanged();
         notifyObservers(FineEvent.ISSUED);

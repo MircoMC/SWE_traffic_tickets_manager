@@ -4,7 +4,12 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
-/** Accesso ai dati delle multe: nasconde il database al resto del sistema. */
+/**
+ * Access to the fines data: hides the database from the rest of the system.
+ *
+ * CONTRACT: findById and findByOwner return NEW, independent objects at every call
+ * (the domain keeps them as the single original in the IdentityMap).
+ */
 public interface FineDAO {
     void save(Fine fine);
     void update(Fine fine);

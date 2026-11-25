@@ -21,30 +21,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * documento, non digitato dall'utente. Quindi il codice fiscale è unico e corrisponde a una sola persona.
  * I metodi di registrazione devono essere chiamati solo dal processo di iscrizione, mai da un client.
  */
-public class PasswordDatabase {
-
-    /** Una riga dell'archivio. */
-    public static final class Entry {
-        private final String username;
-        private final byte[] salt;
-        private final byte[] hash;
-        private final int userId;
-        private final Role role;
-
-        private Entry(String username, byte[] salt, byte[] hash, int userId, Role role) {
-            this.username = username;
-            this.salt = salt;
-            this.hash = hash;
-            this.userId = userId;
-            this.role = role;
-        }
-
-        public String getUsername() { return username; }
-        public byte[] getSalt()     { return salt.clone(); }
-        public byte[] getHash()     { return hash.clone(); }
-        public int getUserId()    { return userId; }
-        public Role getRole()     { return role; }
-    }
+public class PasswordDatabase implements CredentialsStore {
 
     private final Map<String, Entry> privateAccounts = new ConcurrentHashMap<>();
     private final Map<List<String>, Entry> offices = new ConcurrentHashMap<>();
@@ -101,10 +78,12 @@ public class PasswordDatabase {
         }
     }
 
+    @Override
     public Optional<Entry> find(String username) {
         return username == null ? Optional.<Entry>empty() : Optional.ofNullable(privateAccounts.get(username));
     }
 
+    @Override
     public Optional<Entry> findOffice(String username, String officeCode) {
         if (username == null || officeCode == null) {
             return Optional.empty();

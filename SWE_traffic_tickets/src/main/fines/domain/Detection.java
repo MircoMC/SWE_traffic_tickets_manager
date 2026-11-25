@@ -1,44 +1,43 @@
 package fines.domain;
 
-import fines.speedcamera.Location;
 import java.time.Instant;
 import java.util.Objects;
 import java.util.Optional;
+import fines.speedcamera.Location;
 import fines.plates.PlateRegistry;
 
 /**
- * Value object: una misura fatta da un autovelox. Porta con sé tutto ciò che serve a decidere la multa:
- * il limite IN VIGORE al momento della misura (se poi l'autovelox viene riconfigurato la multa non cambia)
- * e l'istante, che serve a trovare chi era il proprietario della targa in quel momento.
+ * Value object: a measurement made by a speed camera. It carries everything needed to decide the fine:
+ * the limit IN FORCE at the time of the measurement (if the speed camera is reconfigured later the fine does not change)
+ * and the instant, used to find who owned the plate at that moment.
  */
 public final class Detection {
 
-    /** Margine per gli errori di misura: sotto i 100 km/h si tolgono 5 km/h dalla velocità rilevata... */
+    /** Margin for measurement errors: below 100 km/h, 5 km/h are subtracted from the detected speed... */
     static final int TOLERANCE_KMH = 5;
-    /** ...da 100 km/h in su si toglie il 5% (a 100 km/h i due margini coincidono: 5 km/h). */
+    /** ...from 100 km/h up, 5% is subtracted (at 100 km/h the two margins coincide: 5 km/h). */
     static final int PERCENTAGE_THRESHOLD_KMH = 100;
 
     private final String cameraId;
-    private final String plate;          // già normalizzata
+    private final String plate;          // already normalized
     private final int speed;          // km/h
     private final int limit;            // km/h
     private final Instant detectedAt;
-    private final Location location;    // dove si trovava l'autovelox in quel momento (può mancare)
+    private final Location location;      // position of the camera when measuring (null if unknown)
 
     public Detection(String cameraId, String plate, int speed, int limit, Instant detectedAt) {
         this(cameraId, plate, speed, limit, detectedAt, null);
     }
 
-    public Detection(String cameraId, String plate, int speed, int limit, Instant detectedAt,
-                       Location location) {
+    public Detection(String cameraId, String plate, int speed, int limit, Instant detectedAt, Location location) {
         if (cameraId == null || cameraId.trim().isEmpty()) {
-            throw new IllegalArgumentException("Autovelox mancante");
+            throw new IllegalArgumentException("Missing speed camera");
         }
         if (speed <= 0) {
-            throw new IllegalArgumentException("La velocità rilevata deve essere positiva");
+            throw new IllegalArgumentException("The detected speed must be positive");
         }
         if (limit <= 0) {
-            throw new IllegalArgumentException("Il limite di velocità deve essere positivo");
+            throw new IllegalArgumentException("The speed limit must be positive");
         }
         this.cameraId = cameraId;
         this.plate = PlateRegistry.normalize(plate);
@@ -53,15 +52,13 @@ public final class Detection {
     public int getSpeed()       { return speed; }
     public int getLimit()         { return limit; }
     public Instant getDetectedAt() { return detectedAt; }
-
-    /** La posizione dell'autovelox al momento della misura (un autovelox mobile ne ha una diversa a ogni misura). */
     public Optional<Location> getLocation() { return Optional.ofNullable(location); }
 
     /**
-     * La multa scatta solo se il limite è superato anche togliendo il margine di errore di misura:
-     * sotto i 100 km/h velocità - 5 &gt; limite; da 100 km/h in su velocità * 95% &gt; limite.
-     * Esempio con limite 50: 55 km/h non è infrazione, 56 sì.
-     * La percentuale si confronta senza divisioni (velocità * 95 &gt; limite * 100) per non troncare i decimali.
+     * The fine applies only if the limit is exceeded even after removing the measurement error margin:
+     * below 100 km/h speed - 5 &gt; limit; from 100 km/h up speed * 95% &gt; limit.
+     * Example with limit 50: 55 km/h is not a violation, 56 is.
+     * The percentage is compared without divisions (speed * 95 &gt; limit * 100) to avoid truncating decimals.
      */
     public boolean isViolation() {
         if (speed < PERCENTAGE_THRESHOLD_KMH) {
@@ -71,8 +68,8 @@ public final class Detection {
     }
 
     /**
-     * Km/h oltre il limite calcolati sulla velocità RILEVATA (0 se entro il limite), senza il margine di
-     * misura: può essere positivo anche quando isViolation() è false. Serve solo per l'importo.
+     * Km/h over the limit computed on the DETECTED speed (0 if within the limit), without the measurement
+     * margin: it can be positive even when isViolation() is false. Only used for the amount.
      */
     public int getExcess() { return Math.max(0, speed - limit); }
 
@@ -92,6 +89,6 @@ public final class Detection {
 
     @Override
     public String toString() {
-        return "Rilevazione[" + cameraId + " " + plate + " " + speed + "/" + limit + " km/h @ " + detectedAt + "]";
+        return "Detection[" + cameraId + " " + plate + " " + speed + "/" + limit + " km/h @ " + detectedAt + "]";
     }
 }

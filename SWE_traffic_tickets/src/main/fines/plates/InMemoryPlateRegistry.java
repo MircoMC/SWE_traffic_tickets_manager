@@ -12,10 +12,10 @@ import java.util.TreeSet;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentSkipListMap;
 
-/** Versione in memoria; in seguito si può sostituire con una tabella del database (targa, proprietario, dal). */
+/** In-memory version; the database version is JdbcPlateRegistry (table plate_ownerships). */
 public class InMemoryPlateRegistry implements PlateRegistry {
 
-    /** Per ogni targa: dall'istante X il proprietario è Y. */
+    /** For each plate: from instant X the owner is Y. */
     private final Map<String, NavigableMap<Instant, Integer>> history = new ConcurrentHashMap<>();
     private final Clock clock;
 
@@ -33,10 +33,10 @@ public class InMemoryPlateRegistry implements PlateRegistry {
     }
 
     @Override
-    public void assign(String plate, int ownerId, Instant from) {
-        Objects.requireNonNull(from);
+    public void assign(String plate, int ownerId, Instant since) {
+        Objects.requireNonNull(since);
         history.computeIfAbsent(PlateRegistry.normalize(plate), k -> new ConcurrentSkipListMap<>())
-              .put(from, ownerId);
+              .put(since, ownerId);
     }
 
     @Override

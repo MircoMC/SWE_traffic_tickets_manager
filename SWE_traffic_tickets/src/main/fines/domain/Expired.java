@@ -1,6 +1,6 @@
 package fines.domain;
 
-/** Expired ma ancora pagabile (con un costo maggiore, in futuro) e annullabile. */
+/** Expired but still payable (at a higher cost, in the future) and cancellable. */
 final class Expired extends FineState {
 
     private static final Expired INSTANCE = new Expired();

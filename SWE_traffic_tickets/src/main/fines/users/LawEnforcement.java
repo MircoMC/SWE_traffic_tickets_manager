@@ -6,7 +6,7 @@ public abstract class LawEnforcement extends User {
         super(id, name);
     }
 
-    /** Le forze dell'ordine (carabinieri e amministratori) possono consultare le multe di tutti. */
+    /** Law enforcement (police officers and administrators) can view everyone's fines. */
     @Override
     public boolean canViewFinesOf(int otherUserId) {
         return true;

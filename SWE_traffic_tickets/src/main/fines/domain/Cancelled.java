@@ -1,6 +1,6 @@
 package fines.domain;
 
-/** AttemptState finale: pay e cancel sono rifiutate, expire non ha effetto. */
+/** Final state: pay and cancel are rejected, expire has no effect. */
 final class Cancelled extends FineState {
 
     private static final Cancelled INSTANCE = new Cancelled();

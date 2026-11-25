@@ -3,7 +3,7 @@ package fines.domain;
 import fines.observers.Observable;
 import fines.observers.Observer;
 
-/** Comodità: fa il cast di source e arg, così le sottoclassi lavorano con tipi precisi. */
+/** Convenience: casts source and arg, so subclasses work with precise types. */
 public abstract class FineObserver implements Observer {
 
     @Override

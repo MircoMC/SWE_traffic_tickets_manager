@@ -1,11 +1,11 @@
 package fines.domain;
 
-/** Rilevata un'infrazione con una targa che non risulta assegnata a nessun utente. */
+/** A violation was detected with a plate that is not assigned to any user. */
 public class UnregisteredPlateException extends RuntimeException {
 
     private static final long serialVersionUID = 1L;
 
     public UnregisteredPlateException(String plate) {
-        super("Targa non registrata: " + plate);
+        super("Unregistered plate: " + plate);
     }
 }

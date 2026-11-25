@@ -1,8 +1,8 @@
 package fines.users;
 
 /**
- * Il giudice può consultare le multe di tutti e, dopo il login, ottenere l'Cancellation.
- * Non è una LawEnforcement: non fa rilevazioni, decide sui ricorsi.
+ * The judge can view everyone's fines and, after the login, obtain the Cancellation.
+ * Not a LawEnforcement: it makes no detections, it decides on appeals.
  */
 public final class Judge extends User {
 

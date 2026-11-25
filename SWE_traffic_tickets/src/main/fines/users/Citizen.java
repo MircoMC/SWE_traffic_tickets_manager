@@ -6,7 +6,7 @@ public final class Citizen extends User {
         super(id, name);
     }
 
-    /** Il cittadino vede solo le proprie multe. */
+    /** A citizen only sees their own fines. */
     @Override
     public boolean canViewFinesOf(int otherUserId) {
         return otherUserId == getId();

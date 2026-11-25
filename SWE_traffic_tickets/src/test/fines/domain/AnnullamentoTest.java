@@ -18,8 +18,8 @@ class AnnullamentoTest {
 
     private InMemoryFineDAO dao;
     private AdjustableClock clock;
-    private FineService servizi;
-    private Cancellation annullamento;
+    private fines.domain.FineService servizi;
+    private fines.domain.Cancellation annullamento;
 
     @BeforeEach
     void setUp() {
@@ -28,7 +28,7 @@ class AnnullamentoTest {
         PlateRegistry registro = new InMemoryPlateRegistry(clock);
         registro.assign("AB123CD", 1);
         registro.assign("EF456GH", 10);     // l'auto del giudice stesso
-        servizi = new FineService(dao, registro, new GatewayContatore(), clock);
+        servizi = new fines.domain.FineService(dao, registro, new GatewayContatore(), clock);
         annullamento = servizi.cancellationFor(new Judge(10, "giudice"));
     }
 
@@ -37,7 +37,7 @@ class AnnullamentoTest {
         UUID id = crea(servizi, clock, "AB123CD", 80);
         annullamento.cancel(id, "  Errore di rilevazione  ");
 
-        CancellationRuling p = servizi.getCopy(id).getRuling().get();
+        fines.domain.CancellationRuling p = servizi.getCopy(id).getRuling().get();
         assertEquals(10, p.getJudgeId());
         assertEquals("Errore di rilevazione", p.getReason());
         assertEquals(LocalDate.now(clock), p.getDate());

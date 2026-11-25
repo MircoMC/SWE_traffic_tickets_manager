@@ -1,6 +1,6 @@
 package fines.domain;
 
-/** Eventi che gli osservatori possono ricevere da una multa. */
+/** Events that observers can receive from a fine. */
 public enum FineEvent {
     ISSUED, PAID, EXPIRED, CANCELLED
 }

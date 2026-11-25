@@ -3,14 +3,14 @@ package fines.domain;
 import java.util.UUID;
 
 /**
- * Porta verso il gestore dei pagamenti, definita dal dominio e implementata fuori.
+ * Port to the payment provider, defined by the domain and implemented outside.
  *
- * CONTRATTO: {@code payment} deve essere IDEMPOTENTE per idMulta. Se per quell'id l'addebito
- * è già avvenuto, deve restituire true senza addebitare di nuovo. Serve perché, se il salvataggio
- * fallisce dopo l'addebito, il chiamante può ripetere pay() senza far pagare due volte.
+ * CONTRACT: {@code payment} must be IDEMPOTENT per fineId. If the charge for that id
+ * has already happened, it must return true without charging again. This is needed because, if saving
+ * fails after the charge, the caller can repeat pay() without charging twice.
  */
 public interface PaymentGateway {
 
-    /** @return true se la multa risulta addebitata (ora o in precedenza), false se il pagamento è rifiutato */
+    /** @return true if the fine is charged (now or previously), false if the payment is refused */
     boolean payment(UUID fineId, long amountCents);
 }

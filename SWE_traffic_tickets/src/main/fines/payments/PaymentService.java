@@ -6,27 +6,27 @@ import java.util.concurrent.ConcurrentHashMap;
 import fines.domain.PaymentGateway;
 
 /**
- * Servizio di pagamento. Per ora è un finto: accetta sempre il pagamento.
- * Rispetta il contratto di PaymentGateway: è idempotente per idMulta, quindi una multa
- * già addebitata non viene addebitata una seconda volta.
- * In seguito qui si parlerà con il gestore dei pagamenti reale, che dovrà verificare
- * lato server importo e idempotenza (questa classe è pubblica e non si può nascondere in Java).
+ * Payment service. For now it is a fake: it always accepts the payment.
+ * It honors the PaymentGateway contract: it is idempotent per fineId, so a fine
+ * already charged is not charged a second time.
+ * Later this will talk to the real payment provider, which must verify
+ * amount and idempotency server-side (this class is public and cannot be hidden in Java).
  */
 public final class PaymentService implements PaymentGateway {
 
     private final Set<UUID> charged = ConcurrentHashMap.newKeySet();
 
-    /** @return true se la multa risulta addebitata */
+    /** @return true if the fine is charged */
     @Override
     public boolean payment(UUID fineId, long amountCents) {
         if (amountCents <= 0) {
-            throw new IllegalArgumentException("Importo non valido: " + amountCents);
+            throw new IllegalArgumentException("Invalid amount: " + amountCents);
         }
         if (!charged.add(fineId)) {
-            System.out.println("Multa già addebitata: nessun nuovo addebito");
+            System.out.println("Addebito già effettuato: nessun nuovo addebito");
             return true;
         }
-        System.out.println("Pagamento di " + amountCents + " cent");   // l'id non si scrive nei log
+        System.out.println("Pagamento di " + amountCents + " cent");
         return true;
     }
 }

@@ -5,17 +5,17 @@ import java.time.LocalDate;
 import java.util.UUID;
 
 /**
- * Sta tra Fine e FineState: è l'unico che cambia lo stato di una multa.
- * Lavora sempre per id e recupera l'oggetto originale dalla Identity Map (IdentityMap).
+ * Sits between Fine and FineState: it is the only one that changes the state of a fine.
+ * It always works by id and gets the original object from the Identity Map (IdentityMap).
  *
- * Ogni operazione segue lo stesso schema: (1) lo stato corrente dice quale sarà il successivo
- * e rifiuta se l'operazione non è consentita, (2) si esegue l'azione esterna (addebito),
- * (3) si SALVA nel DAO la multa aggiornata, (4) solo se il salvataggio riesce si cambia la multa
- * in memoria e si avvisano gli osservatori. Così la memoria non è mai "più avanti" del database.
+ * Every operation follows the same scheme: (1) the current state says which one comes next
+ * and rejects if the operation is not allowed, (2) the external action is performed (charge),
+ * (3) the updated fine is SAVED in the DAO, (4) only if saving succeeds the fine is changed
+ * in memory and the observers are notified. So memory is never "ahead" of the database.
  *
- * Concorrenza: operazioni su multe diverse procedono in parallelo, su una stessa multa sono
- * serializzate dal monitor privato Fine.lock. Gli osservatori girano dentro il lock (ricevono
- * copie e gli errori sono isolati); se diventeranno lenti andranno spostati su una coda.
+ * Concurrency: operations on different fines proceed in parallel, on the same fine they are
+ * serialized by the private monitor Fine.lock. Observers run inside the lock (they receive
+ * copies and errors are isolated); if they become slow they should be moved to a queue.
  */
 class StateManager {
 
@@ -39,20 +39,18 @@ class StateManager {
     }
 
     /**
-     * Avvia il pagamento: se il gestore risponde true la multa passa a Paid.
-     * Se il salvataggio fallisce DOPO l'addebito, l'eccezione arriva al chiamante e lo stato resta
-     * invariato: ripetere pay() completa la transizione senza addebitare di nuovo
-     * (il PaymentGateway è idempotente per id).
-     * LIMITE NOTO: se prima di un nuovo tentativo un giudice annulla la multa, l'addebito resta; in produzione
-     * si riconcilia periodicamente con il gestore dei pagamenti.
+     * Starts the payment: if the provider answers true the fine becomes Paid.
+     * If saving fails AFTER the charge, the exception reaches the caller and the state stays
+     * unchanged: repeating pay() completes the transition without charging again
+     * (the PaymentGateway is idempotent per id).
      *
-     * @return true se pagata, false se il gestore ha rifiutato (stato invariato)
-     * @throws IllegalStateException se nello stato attuale la multa non è pagabile
+     * @return true if paid, false if the provider refused (state unchanged)
+     * @throws IllegalStateException if in the current state the fine cannot be paid
      */
     boolean paymentStarting(UUID fineId) {
         Fine fine = find(fineId);
         synchronized (fine.lock) {
-            FineState next = fine.getState().onPay();   // rifiuta PRIMA di addebitare
+            FineState next = fine.getState().onPay();   // rejects BEFORE charging
             if (!payments.payment(fine.getId(), fine.getAmountCents())) {
                 return false;
             }
@@ -61,15 +59,13 @@ class StateManager {
         }
     }
 
-    /** Cancellation disposto da un giudice. Una multa pagata non è annullabile. */
+    /** Cancellation ordered by a judge. A paid fine cannot be cancelled. */
     void cancelStarting(UUID fineId, int judgeId, String reason) {
         if (reason == null || reason.trim().isEmpty()) {
-            throw new IllegalArgumentException("Motivazione obbligatoria");
+            throw new IllegalArgumentException("Reason is required");
         }
         Fine fine = find(fineId);
         synchronized (fine.lock) {
-            // conflitto di interessi: un giudice non decide sulle multe intestate a se stesso
-            // (l'id della persona è lo stesso per l'account privato e per la carica)
             if (fine.getOwnerId() == judgeId) {
                 throw new SecurityException("Il giudice non può annullare una multa a lui intestata");
             }
@@ -79,7 +75,7 @@ class StateManager {
         }
     }
 
-    /** La data viene dal Clock del sistema, non dal chiamante. */
+    /** The date comes from the system Clock, not from the caller. */
     void checkExpiration(UUID fineId) {
         Fine fine = find(fineId);
         synchronized (fine.lock) {
@@ -93,11 +89,11 @@ class StateManager {
         }
     }
 
-    /** Sempre dentro un synchronized(multa.lock). Prima il DAO, poi la memoria, poi gli osservatori. */
+    /** Always inside a synchronized(fine.lock). First the DAO, then memory, then the observers. */
     private void apply(Fine fine, FineState next, FineEvent event, CancellationRuling ruling) {
         if (identityMap.get(fine.getId()) != fine) {
             throw new IllegalArgumentException(
-                "La multa " + fine.getId() + " non è quella registrata nell'IdentityMap");
+                "Fine " + fine.getId() + " is not the one registered in the IdentityMap");
         }
         fineDAO.update(fine.copyWith(next, ruling));
         fine.changeState(next, event, ruling);

@@ -1,39 +1,45 @@
 package fines.domain;
 
+import fines.observers.Observable;
+import fines.observers.Observer;
 import java.util.Objects;
 import java.util.concurrent.Executor;
 import java.util.concurrent.RejectedExecutionException;
-import fines.observers.Observable;
-import fines.observers.Observer;
 
 /**
- * Sta tra la multa e gli osservatori registrati da fuori. Fa tre cose:
- * 1) consegna all'osservatore una COPIA della multa, mai l'originale (che resterebbe
- *    così manipolabile: deleteObservers, lock sul monitor, ...);
- * 2) la copia viene presa subito, dentro il lock della multa (fotografa lo stato dell'evento), ma la CONSEGNA
- *    avviene su un thread dedicato, in coda e in ordine, FUORI dal lock: un osservatore lento o che
- *    richiama la facciata non può bloccare né mandare in deadlock le operazioni sulle multe;
- * 3) isola gli errori: se un osservatore lancia un'eccezione, gli altri vengono avvisati lo stesso
- *    e l'operazione sulla multa non fallisce.
- * Un osservatore che non ritorna mai blocca solo le notifiche (la coda è unica), non il dominio.
+ * Sits between the fine and the observers registered from outside. It does three things:
+ * 1) hands the observer a COPY of the fine, never the original (which would stay
+ *    manipulable: deleteObservers, locking the monitor, ...);
+ * 2) isolates errors: if an observer throws an exception, the others are notified anyway
+ *    and the operation on the fine does not fail;
+ * 3) with an Executor, the delivery happens on another thread: a slow observer never holds the lock of the fine
+ *    (the copy is made on the calling thread, so it shows the fine exactly as it was at that moment).
  */
 final class ProtectedObserver implements Observer {
 
     private final Observer delegate;
-    private final Executor executor;
+    private final Executor executor;   // null: delivery on the calling thread
+
+    ProtectedObserver(Observer delegate) {
+        this(delegate, null);
+    }
 
     ProtectedObserver(Observer delegate, Executor executor) {
         this.delegate = Objects.requireNonNull(delegate);
-        this.executor = Objects.requireNonNull(executor);
+        this.executor = executor;
     }
 
     @Override
     public void update(Observable source, Object arg) {
-        Fine copy = ((Fine) source).copy();   // adesso, mentre siamo ancora dentro il lock
+        Fine copy = ((Fine) source).copy();
+        if (executor == null) {
+            deliver(copy, arg);
+            return;
+        }
         try {
             executor.execute(() -> deliver(copy, arg));
         } catch (RejectedExecutionException e) {
-            System.err.println("Notifica a " + delegate.getClass().getName() + " scartata: " + e);
+            System.err.println("Observer " + delegate.getClass().getName() + ": notification dropped (" + e + ")");
         }
     }
 
@@ -41,12 +47,11 @@ final class ProtectedObserver implements Observer {
         try {
             delegate.update(copy, arg);
         } catch (RuntimeException e) {
-            System.err.println("Osservatore " + delegate.getClass().getName()
-                + " ha lanciato un'eccezione (ignorata): " + e);
+            System.err.println("Observer " + delegate.getClass().getName() + " threw an exception (ignored): " + e);
         }
     }
 
-    // stessa regola di Observable.addObserver: lo stesso osservatore non si registra due volte
+    // same rule as Observable.addObserver: the same observer is not registered twice
     @Override
     public boolean equals(Object o) {
         return o instanceof ProtectedObserver && delegate.equals(((ProtectedObserver) o).delegate);

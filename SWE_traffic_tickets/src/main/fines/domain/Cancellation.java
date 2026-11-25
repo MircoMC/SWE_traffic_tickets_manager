@@ -3,12 +3,9 @@ package fines.domain;
 import java.util.UUID;
 
 /**
- * Capability per annullare le multe, parallela al pagamento: l'unico modo per annullare è avere
- * in mano questo oggetto, e lo si ottiene solo dal login di un Judge (vedi LoginProxy).
- * Il costruttore è package-private: nasce solo da FineService.cancellationFor.
- *
- * LIMITE NOTO: non c'è revoca. Finché la sessione esiste l'oggetto funziona anche se il ruolo del giudice
- * viene tolto dopo il login; se in futuro si aggiungono logout o scadenza, qui va un controllo di validità.
+ * Capability to cancel fines, parallel to payment: the only way to cancel is to hold
+ * this object, which is obtained only from the login of a Judge (see LoginProxy).
+ * The constructor is package-private: it is only created by FineService.cancellationFor.
  */
 public final class Cancellation {
 
@@ -21,9 +18,8 @@ public final class Cancellation {
     }
 
     /**
-     * @throws SecurityException        se la multa è intestata al giudice stesso
-     * @throws IllegalStateException    se nello stato attuale la multa non è annullabile (es. già pagata)
-     * @throws IllegalArgumentException se la multa non esiste o la motivazione è vuota
+     * @throws IllegalStateException    if in the current state the fine cannot be cancelled (e.g. already paid)
+     * @throws IllegalArgumentException if the fine does not exist or the reason is empty
      */
     public void cancel(UUID fineId, String reason) {
         stateManager.cancelStarting(fineId, judgeId, reason);

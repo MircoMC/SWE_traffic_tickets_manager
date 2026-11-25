@@ -6,30 +6,30 @@ import java.util.Optional;
 import java.util.Set;
 
 /**
- * Associa ogni targa al suo proprietario, TENENDO LA STORIA: serve a sapere chi era il proprietario
- * all'istante di un'infrazione anche se la rilevazione arriva dopo una vendita.
- * Un utente può avere più targhe.
+ * Associates every plate with its owner, KEEPING THE HISTORY: needed to know who the owner was
+ * at the instant of a violation even if the detection arrives after a sale.
+ * A user can have several plates.
  */
 public interface PlateRegistry {
 
-    /** Assegna la targa all'utente da adesso: se aveva già un proprietario è un passaggio di proprietà. */
+    /** Assigns the plate to the user from now on: if it already had an owner it is an ownership transfer. */
     void assign(String plate, int ownerId);
 
-    /** Assegna la targa all'utente a partire dall'istante indicato (anche nel passato, per inserire la storia). */
-    void assign(String plate, int ownerId, Instant from);
+    /** Assigns the plate to the user from the given instant (even in the past, to insert the history). */
+    void assign(String plate, int ownerId, Instant since);
 
-    /** Proprietario all'istante dato; vuoto se la targa era sconosciuta in quel momento. */
+    /** Owner at the given instant; empty if the plate was unknown at that moment. */
     Optional<Integer> ownerAt(String plate, Instant instant);
 
     Optional<Integer> currentOwner(String plate);
 
-    /** Targhe che adesso appartengono all'utente. */
+    /** Plates that currently belong to the user. */
     Set<String> platesOf(int ownerId);
 
-    /** Stessa targa scritta in modi diversi ("ab123cd ", "AB123CD") = stessa chiave. */
+    /** The same plate written in different ways ("ab123cd ", "AB123CD") = same key. */
     static String normalize(String plate) {
         if (plate == null || plate.trim().isEmpty()) {
-            throw new IllegalArgumentException("Targa mancante");
+            throw new IllegalArgumentException("Missing plate");
         }
         return plate.trim().toUpperCase(Locale.ROOT);
     }

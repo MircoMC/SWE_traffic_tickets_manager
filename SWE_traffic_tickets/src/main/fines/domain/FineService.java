@@ -1,78 +1,81 @@
 package fines.domain;
 
-import java.time.Clock;
-import java.util.Objects;
-import java.util.UUID;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 import fines.observers.Observer;
 import fines.plates.PlateRegistry;
 import fines.users.Judge;
+import java.time.Clock;
+import java.util.List;
+import java.util.Objects;
+import java.util.UUID;
+import java.util.concurrent.*;
+import java.util.function.Consumer;
 
 /**
- * Facciata: l'unico punto d'ingresso pubblico al dominio delle multe.
- * IdentityMap, StateManager e FineMaker sono interni al package e non si vedono da fuori:
- * dall'esterno si lavora solo per id e si ricevono solo copie.
+ * Facade: the only public entry point to the fine's domain.
+ * IdentityMap, StateManager and FineMaker are package-private: from outside you work by id and receive copies.
  *
- * Questo oggetto è il nucleo FIDATO: lo hanno solo il codice di assemblaggio e il LoginProxy.
- * I client ricevono dal login soltanto ciò che il loro ruolo consente (storico, Cancellation).
+ * This object is the TRUSTED core: only the assembly code and LoginProxy hold it.
+ * Clients get from the login only what their role allows (history, Cancellation).
  *
- * Il DAO viene aggiornato direttamente dallo StateManager a ogni transizione, non tramite osservatori.
+ * The DAO is the source of truth and is updated by the StateManager at every transition.
+ * Observers registered here are attached to every fine created or loaded afterwards.
  */
 public final class FineService {
 
-    private final IdentityMap identityMap = new IdentityMap();
+    private final List<Observer> observers = new CopyOnWriteArrayList<>();
+    private final IdentityMap identityMap;
     private final StateManager stateManager;
     private final FineMaker maker;
 
-    /** Un solo thread: le notifiche arrivano in ordine e mai dentro il lock di una multa. */
+    public FineService(FineDAO fineDAO, PlateRegistry plateRegistry, PaymentGateway payments) {
+        this(fineDAO, plateRegistry, payments, Clock.systemDefaultZone());
+    }
+
+    public FineService(FineDAO fineDAO, PlateRegistry plateRegistry, PaymentGateway payments, Clock clock) {
+        Objects.requireNonNull(fineDAO);
+        Objects.requireNonNull(clock);
+        Consumer<Fine> attachObservers = fine -> observers.forEach(fine::addObserver);
+        this.identityMap = new IdentityMap(fineDAO, attachObservers);
+        this.stateManager = new StateManager(identityMap, Objects.requireNonNull(payments), fineDAO, clock);
+        this.maker = new FineMaker(identityMap, fineDAO, Objects.requireNonNull(plateRegistry), clock,
+                                   attachObservers);
+    }
+
     private final ExecutorService notifications = Executors.newSingleThreadExecutor(r -> {
         Thread t = new Thread(r, "notifiche-multe");
         t.setDaemon(true);
         return t;
     });
 
-    public FineService(FineDAO fineDAO, PlateRegistry plateRegistry, PaymentGateway payments) {
-        this(fineDAO, plateRegistry, payments, Clock.systemUTC());
-    }
-
-    public FineService(FineDAO fineDAO, PlateRegistry plateRegistry, PaymentGateway payments, Clock clock) {
-        Objects.requireNonNull(fineDAO);
-        Objects.requireNonNull(clock);
-        this.stateManager = new StateManager(identityMap, Objects.requireNonNull(payments), fineDAO, clock);
-        this.maker = new FineMaker(identityMap, fineDAO, Objects.requireNonNull(plateRegistry), clock);
-    }
 
     /**
-     * Riceve una misura dell'autovelox e crea la multa. Lo si dà all'SpeedCamera come {@code fineService::createFine}.
+     * Receives a detection from the speed camera and creates the fine
+     * (handed to the camera as a function: {@code service::createFine}).
      *
-     * @return l'id della nuova multa (casuale e non sequenziale: da trattare come riservato, non va scritto nei log)
-     * @throws IllegalArgumentException    se la velocità non supera il limite
-     * @throws UnregisteredPlateException se la targa non aveva un proprietario all'istante della rilevazione
+     * @return the id of the new fine
+     * @throws IllegalArgumentException       if the speed does not exceed the limit
+     * @throws UnregisteredPlateException     if the plate had no owner at the instant of the detection
      */
     public UUID createFine(Detection detection) {
         return maker.createFine(detection);
     }
 
     /**
-     * Può pagare chiunque: conta solo che la multa venga pagata. L'importo viene sempre dalla multa.
+     * Anyone can pay: all that matters is that the fine gets paid. The amount always comes from the fine.
      *
-     * @return true se pagata, false se il gestore dei pagamenti ha rifiutato
-     * @throws IllegalStateException se nello stato attuale la multa non è pagabile
+     * @return true if paid, false if the payment gateway refused
+     * @throws IllegalStateException if in the current state the fine cannot be paid
      */
     public boolean pay(UUID fineId) {
         return stateManager.paymentStarting(fineId);
     }
 
-    /** Controlla la scadenza con la data del Clock: il chiamante non può sceglierla. */
+    /** Checks the expiration with the Clock date: the caller cannot choose it. */
     public void checkExpiration(UUID fineId) {
         stateManager.checkExpiration(fineId);
     }
 
-    /** L'annullamento si fa solo tramite l'oggetto Cancellation, che si ottiene qui per un Judge. */
+    /** Cancelling is only possible through the Cancellation object, obtained here for a Judge. */
     public Cancellation cancellationFor(Judge judge) {
         return new Cancellation(stateManager, Objects.requireNonNull(judge).getId());
     }
@@ -81,7 +84,7 @@ public final class FineService {
         return stateManager.getState(fineId);
     }
 
-    /** Copia indipendente: modificarla non ha alcun effetto sulla multa vera. */
+    /** Independent copy: changing it has no effect on the real fine. */
     public Fine getCopy(UUID fineId) {
         Fine copy = identityMap.getCopy(fineId);
         if (copy == null) {
@@ -89,20 +92,6 @@ public final class FineService {
         }
         return copy;
     }
-
-    /**
-     * L'osservatore riceverà emissione e cambi di stato di tutte le multe create da ora in poi,
-     * sempre con una COPIA della multa e in modo ASINCRONO (su un thread dedicato, in ordine).
-     * Un'eccezione dell'osservatore non ferma gli altri né l'operazione.
-     */
-    public void addObserver(Observer observer) {
-        maker.addObserver(new ProtectedObserver(observer, notifications));
-    }
-
-    /**
-     * Aspetta che tutte le notifiche accodate fino a questo momento siano state consegnate.
-     * Serve a test, demo e spegnimento ordinato (le notifiche non sono "sincrone" con le operazioni).
-     */
     public void awaitNotifications() {
         try {
             notifications.submit(() -> { }).get(30, TimeUnit.SECONDS);
@@ -112,5 +101,12 @@ public final class FineService {
         } catch (ExecutionException | TimeoutException e) {
             throw new IllegalStateException("Notifiche non consegnate", e);
         }
+    }
+    /**
+     * The observer receives issue and state changes of every fine created or loaded from now on,
+     * always with a COPY of the fine. An exception in an observer stops neither the others nor the operation.
+     */
+    public void addObserver(Observer observer) {
+        observers.add(new ProtectedObserver(observer, notifications));
     }
 }

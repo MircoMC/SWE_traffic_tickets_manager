@@ -1,6 +1,6 @@
 package fines.domain;
 
-/** AttemptState finale: pay e cancel sono rifiutate (una multa pagata non è annullabile), expire non ha effetto. */
+/** Final state: pay and cancel are rejected (a paid fine cannot be cancelled), expire has no effect. */
 final class Paid extends FineState {
 
     private static final Paid INSTANCE = new Paid();
